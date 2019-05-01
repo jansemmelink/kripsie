@@ -1,0 +1,8 @@
+{{template "header" .}}
+<h1>Antwoord</h1>
+Kripties: {{ .EncryptedText }}
+<br/>
+Skakel: <a href="{{ .Hyperlink }}">Ontsyfer</a>"
+<br/>
+<img src="{{ .imageFile }}" atl="QR Code Image"/>
+{{template "footer" .}}

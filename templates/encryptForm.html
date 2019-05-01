@@ -1,0 +1,15 @@
+{{template "header" .}}
+<FORM method="POST" action="/encrypt">
+    <TABLE>
+        <TR>
+            <TD>Teks:</TD><TD><INPUT type="text" name="text" value="{{.text}}" tabindex="1"></TD>
+        </TR>
+        <TR>
+            <TD>Sleutel:</TD><TD><INPUT type="text" name="key" tabindex="2"></TD>
+        </TR>
+        <TR>
+            <TD colspan="2" alignment="center"><BUTTON type="submit" tabindex="3">Enkripteer</BUTTON></TD>
+        </TR>
+    </TABLE>
+</FORM>
+{{template "footer" .}}

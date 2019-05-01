@@ -1,0 +1,18 @@
+{{template "header"}}
+<!-- message is used when decryption failed ... -->
+{{.msg}}
+<br/>
+<FORM method="POST" action="/decrypt">
+    <TABLE>
+        <TR>
+            <TD>Teks:</TD><TD><INPUT type="text" name="text" value="{{ .text }}"></TD>
+        </TR>
+        <TR>
+            <TD>Sleutel:</TD><TD><INPUT type="text" name="key" tabindex="1"></TD>
+        </TR>
+        <TR>
+            <TD colspan="2" alignment="center"><BUTTON type="submit" tabindex="2">Ontsyfer</BUTTON></TD>
+        </TR>
+    </TABLE>
+</FORM>
+{{template "footer" .}}
