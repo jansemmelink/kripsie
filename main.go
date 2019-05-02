@@ -19,12 +19,16 @@ import (
 
 func main() {
 	log.DebugOn()
-	if len(os.Args) != 2 {
+	addr := "0.0.0.0:80"
+	if len(os.Args) > 2 {
 		fmt.Fprintf(os.Stderr, "Usage: %s <addr>\n",path.Base(os.Args[0]))
 		fmt.Fprintf(os.Stderr, "\te.g. %s localhost:8080\n", path.Base(os.Args[0]))
 		os.Exit(1)
 	}
-	addr := os.Args[1]
+	if len(os.Args) == 2 {
+		addr = os.Args[1]
+	}
+
 	if err := http.ListenAndServe(addr, app()); err != nil {
 		panic (log.Wrapf(err, "HTTP Server Failed"))
 	}
