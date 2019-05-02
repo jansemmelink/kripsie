@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"path"
 
 	"github.com/gorilla/pat"
 	"github.com/jansemmelink/kripsie/lib/encryption"
@@ -18,8 +19,14 @@ import (
 
 func main() {
 	log.DebugOn()
-	if err := http.ListenAndServe("0.0.0.0:80", app()); err != nil {
-		log.Debugf("Failed: %v", err)
+	if len(os.Args) != 2 {
+		fmt.Fprintf(os.Stderr, "Usage: %s <addr>\n",path.Base(os.Args[0]))
+		fmt.Fprintf(os.Stderr, "\te.g. %s localhost:8080\n", path.Base(os.Args[0]))
+		os.Exit(1)
+	}
+	addr := os.Args[1]
+	if err := http.ListenAndServe(addr, app()); err != nil {
+		panic (log.Wrapf(err, "HTTP Server Failed"))
 	}
 }
 
@@ -30,7 +37,11 @@ func app() http.Handler {
 	r.Get("/decrypt/{text:[a-zA-Z0-9=]+}", DecryptForm)
 	r.Get("/decrypt", DecryptForm)
 	r.Post("/decrypt", Decrypt)
-	r.NewRoute().PathPrefix("/gen/").Handler(http.StripPrefix("/gen/", http.FileServer(http.Dir("./gen"))))
+	//static files:
+	r.Add(http.MethodGet, "/gen", http.StripPrefix("/gen/", http.FileServer(http.Dir("./gen"))))
+	r.Add(http.MethodGet, "/resources", http.StripPrefix("/resources/", http.FileServer(http.Dir("./resources"))))
+	//default/home page:
+	r.Get("/", DecryptForm)
 	return r
 }
 
@@ -44,14 +55,14 @@ func EncryptForm(res http.ResponseWriter, req *http.Request) {
 		"./templates/pageHeader.html",
 		"./templates/pageFooter.html")
 	if err != nil {
-		Message(res, "Sorry. Please try again later.")
 		log.Errorf("Failed to parse templates: %v", err)
+		Message(res, req, "Sorry. Please try again later.")
 		return
 	}
 	err = t.Execute(res, data)
 	if err != nil {
-		Message(res, "Sorry. Please try again later.")
 		log.Errorf("Failed to execute template: %v", err)
+		Message(res, req, "Sorry. Please try again later.")
 		return
 	}
 }
@@ -98,8 +109,8 @@ func Encrypt(res http.ResponseWriter, req *http.Request) {
 	qrid := uuid.NewV1()
 	data["imageFile"] = fmt.Sprintf("/gen/%s.png", qrid)
 	if err := qrcode.WriteFile(data["Hyperlink"], qrcode.Medium, 256, "."+data["imageFile"]); err != nil {
-		Message(res, "Sorry. Failed to generate your image.")
 		log.Errorf("Failed to generate QR Image file: %v", err)
+		Message(res, req, "Sorry. Failed to generate your image.")
 		return
 	}
 
@@ -109,14 +120,14 @@ func Encrypt(res http.ResponseWriter, req *http.Request) {
 		"./templates/pageFooter.html",
 	)
 	if err != nil {
-		Message(res, "Sorry. Please try again later.")
 		log.Errorf("Failed to parse templates: %v", err)
+		Message(res, req, "Sorry. Please try again later.")
 		return
 	}
 	err = t.Execute(res, data)
 	if err != nil {
-		Message(res, "Sorry. Please try again later.")
 		log.Errorf("Failed to execute template: %v", err)
+		Message(res, req, "Sorry. Please try again later.")
 		return
 	}
 
@@ -134,21 +145,24 @@ func DecryptForm(res http.ResponseWriter, req *http.Request) {
 	data :=
 		map[string]string{
 			"text": req.URL.Query().Get("text"),
+			"msg":  req.FormValue("msg"),
 		}
-	t, err := template.ParseFiles(
+		log.Debugf("Decrypt: %+v", data)
+
+		t, err := template.ParseFiles(
 		"./templates/decryptForm.html",
 		"./templates/pageHeader.html",
 		"./templates/pageFooter.html",
 	)
 	if err != nil {
-		Message(res, "Sorry. Please try again later.")
 		log.Errorf("Failed to parse templates: %v", err)
+		Message(res, req, "Sorry. Please try again later.")
 		return
 	}
 	err = t.Execute(res, data)
 	if err != nil {
-		Message(res, "Sorry. Please try again later.")
 		log.Errorf("Failed to execute templates: %v", err)
+		Message(res, req, "Sorry. Please try again later.")
 		return
 	}
 }
@@ -159,7 +173,6 @@ func Decrypt(res http.ResponseWriter, req *http.Request) {
 	data := map[string]string{
 		"key":  req.FormValue("key"),
 		"text": req.FormValue("text"), //this is base64 encoded
-		"msg":  req.FormValue("msg"),
 	}
 
 	//put the = back before we can do base64 decoding
@@ -183,13 +196,13 @@ func Decrypt(res http.ResponseWriter, req *http.Request) {
 			//log.Debugf("Replaced # with =: %s", fixedText)
 			encryptedData, err = base64.StdEncoding.DecodeString(fixedText)
 			if err != nil {
-				Message(res, "Sorry. Please try again later.")
 				log.Errorf("Failed to base64 decode fixedText=%s: %v", fixedText, err)
+				Message(res, req, "Sorry. Please try again later.")
 				return
 			}
 		} else {
-			Message(res, "Sorry. Please try again later.")
 			log.Errorf("Failed to parse fixedURL: %v", err)
+			Message(res, req, "Sorry. Please try again later.")
 			return
 		}
 	}
@@ -197,8 +210,8 @@ func Decrypt(res http.ResponseWriter, req *http.Request) {
 	//log.Debugf("Encrypted Data: %+v", encryptedData)
 	decryptedData, err := encryption.Decrypt(encryptedData, data["key"])
 	if err != nil {
-		Message(res, "Failed to decrypt")
 		log.Errorf("Decryption failed: %v", err)
+		Message(res, req, "%v", err)
 		return
 	}
 	data["DecryptedText"] = string(decryptedData)
@@ -208,14 +221,14 @@ func Decrypt(res http.ResponseWriter, req *http.Request) {
 		"./templates/pageFooter.html",
 	)
 	if err != nil {
-		Message(res, "Sorry. Please try again later.")
 		log.Errorf("Failed to parse templates: %v", err)
+		Message(res, req, "Sorry. Please try again later.")
 		return
 	}
 	err = t.Execute(res, data)
 	if err != nil {
-		Message(res, "Sorry. Please try again later.")
 		log.Errorf("Failed to execute templates: %v", err)
+		Message(res, req, "Sorry. Please try again later.")
 		return
 	}
 
@@ -223,9 +236,19 @@ func Decrypt(res http.ResponseWriter, req *http.Request) {
 }
 
 //Message writes a HTML page with a message
-func Message(res http.ResponseWriter, format string, args ...interface{}) {
+func Message(res http.ResponseWriter, req *http.Request, format string, args ...interface{}) {
 	data := map[string]string{
 		"message": fmt.Sprintf(format, args...),
+	}
+
+	//if req is specified, redirect to the same page but put msg=... in as a URL param
+	if req != nil {
+		newURL := req.URL.Query()
+		newURL.Set("msg", data["message"])
+		newAddr := fmt.Sprintf("http://%s%s?%s", req.Host, req.URL.Path, newURL.Encode())
+		log.Debugf("Redirect: %s", newAddr)
+		http.Redirect(res, req, newAddr, http.StatusOK)
+		return
 	}
 
 	t, err := template.ParseFiles(
@@ -234,10 +257,11 @@ func Message(res http.ResponseWriter, format string, args ...interface{}) {
 		"./templates/pageFooter.html",
 	)
 	if err != nil {
-		panic(err)
+		panic(log.Wrapf(err, "failed to parse template"))
 	}
+
 	err = t.Execute(res, data)
 	if err != nil {
-		panic(err)
+		panic(log.Wrapf(err, "failed to execute template"))
 	}
 }

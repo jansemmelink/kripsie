@@ -1,8 +1,7 @@
 {{template "header" .}}
-<h1>Antwoord</h1>
-Kripties: {{ .EncryptedText }}
-<br/>
-Skakel: <a href="{{ .Hyperlink }}">Ontsyfer</a>"
-<br/>
-<img src="{{ .imageFile }}" atl="QR Code Image"/>
+<h1>Enkodering</h1>
+<p>Die geënkodeerde teks is: {{ .EncryptedText }}</p>
+<p>Klik op <a href="{{ .Hyperlink }}">hierdie skakel</a> om dit te ontsyfer met dieselfde sleutel.</p>
+<p>Of nog makliker: druk hierdie QR kode prentjie wat die ander persoon kan skandeer met hulle foon. Dit neem hulle na dieselfde skakel waar hulle dit kan ontsyfer.</p>
+<p><img src="{{ .imageFile }}" atl="QR Code Image"/></p>
 {{template "footer" .}}

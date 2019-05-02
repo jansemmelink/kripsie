@@ -1,4 +1,7 @@
 {{template "header" .}}
+<h1>Enkodeer</h1>
+<p>Enkodeer teks met 'n sleutel, dan stuur jy die geënkodeerde teks vir iemand wat dit
+    slegs kan ontsyfer met dieselfde sleutel. 'n 4-syfer sleutel is gewoonlik genoeg.</p>
 <FORM method="POST" action="/encrypt">
     <TABLE>
         <TR>
@@ -8,7 +11,7 @@
             <TD>Sleutel:</TD><TD><INPUT type="text" name="key" tabindex="2"></TD>
         </TR>
         <TR>
-            <TD colspan="2" alignment="center"><BUTTON type="submit" tabindex="3">Enkripteer</BUTTON></TD>
+            <TD colspan="2" alignment="center"><BUTTON type="submit" tabindex="3">Enkodeer</BUTTON></TD>
         </TR>
     </TABLE>
 </FORM>

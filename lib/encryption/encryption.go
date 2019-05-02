@@ -50,7 +50,7 @@ func Decrypt(data []byte, passphrase string) ([]byte, error) {
 	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
 	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return nil, log.Wrapf(err, "Failed to open")
+		return nil, err //return nil, log.Wrapf(err, "Decryption failed.")
 	}
 	return plaintext, nil
 }
